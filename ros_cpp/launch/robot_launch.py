@@ -1,0 +1,93 @@
+from launch import LaunchDescription
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import SetEnvironmentVariable
+import os
+
+def generate_launch_description():
+    pkg_ros_gz_sim = get_package_share_directory('ros_gz_sim')
+    robot_path = get_package_share_directory('ros_cpp')
+    
+    bridge = Node(
+    	package='ros_gz_bridge',
+    	executable='parameter_bridge',
+    	arguments=[
+    	'/camera@sensor_msgs/msg/Image[gz.msgs.Image',
+    	'/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+    	'/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+    	'/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+    	'/scan/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+    	'/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
+    	'/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
+    	'/navsat@sensor_msgs/msg/NavSatFix[gz.msgs.NavSat',
+    	'clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+    	],
+    	output='screen',
+    )
+    gz_sim = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')),
+            launch_arguments={'gz_args': '-r '+os.path.join(robot_path,'worlds/robot_world.sdf')}.items(),
+    )
+    rviz = Node(
+    	package='rviz2',
+    	executable='rviz2',
+	arguments=['-d',os.path.join(robot_path,'rviv','camera.rviz')],
+    )
+    apriltags = Node(
+    	package='apriltag_ros',
+    	executable='apriltag_node',
+	remappings=[
+		('image_rect', '/camera'),
+		('camera_info', '/camera_info')
+	],
+	parameters=[robot_path+"/config/apriltags.yaml"]
+    )
+    keyboard = Node(
+    	package='teleop_twist_keyboard',
+    	executable='teleop_twist_keyboard',
+    	output='screen',
+    	prefix='xterm -e'
+    )
+    ekf = Node(
+        package='robot_localization',
+    	executable='ekf_node',
+    	name='ekf_filter_node',
+    	output='screen',
+    	#parameters=[os.path.join(robot_path,'config','ekf.yaml')],
+    	parameters=[{robot_path+"/config/ekf.yaml"},
+    		    
+    	],
+    )
+    
+    ''' Takes robot.sdf path, opens it, and reads the file and sets it to robotDesc '''
+    robotPath_sdf = os.path.join(robot_path,'models','robot','robot.sdf')
+    with open(robotPath_sdf,'r') as infp:
+    	robotDesc = infp.read()
+    
+ 
+    robot_state_publisher = Node(
+    	package='robot_state_publisher',
+    	executable='robot_state_publisher' ,
+    	name='robot_state_publisher',
+    	output='both',
+    	parameters=[
+    		{'robot_description':robotDesc},
+    		{'use_sim_time':True}
+    	],
+    )
+    
+    
+    
+    return LaunchDescription([
+        SetEnvironmentVariable(name='GZ_SIM_RESOURCE_PATH', value=robot_path),
+        bridge,
+        gz_sim,
+        rviz,
+        apriltags,
+        keyboard,
+        robot_state_publisher,
+        ekf,
+    ])

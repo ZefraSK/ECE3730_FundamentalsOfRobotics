@@ -1,0 +1,205 @@
+<?xml version="1.0" ?>
+<sdf version="1.10">
+    <world name="car_world">
+        <physics name="1ms" type="ignored">
+            <max_step_size>0.001</max_step_size>
+            <real_time_factor>1.0</real_time_factor>
+        </physics>
+        <plugin
+            filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics">
+        </plugin>
+        <plugin
+            filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands">
+        </plugin>
+        <plugin
+            filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster">
+        </plugin>
+
+        <light type="directional" name="sun">
+            <cast_shadows>true</cast_shadows>
+            <pose>0 0 10 0 0 0</pose>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.2 0.2 0.2 1</specular>
+            <attenuation>
+                <range>1000</range>
+                <constant>0.9</constant>
+                <linear>0.01</linear>
+                <quadratic>0.001</quadratic>
+            </attenuation>
+            <direction>-0.5 0.1 -0.9</direction>
+        </light>
+
+        <model name="ground_plane">
+            <static>true</static>
+            <link name="link">
+                <collision name="collision">
+                <geometry>
+                    <plane>
+                    <normal>0 0 1</normal>
+                    </plane>
+                </geometry>
+                </collision>
+                <visual name="visual">
+                <geometry>
+                    <plane>
+                    <normal>0 0 1</normal>
+                    <size>100 100</size>
+                    </plane>
+                </geometry>
+                <material>
+                    <ambient>0.8 0.8 0.8 1</ambient>
+                    <diffuse>0.8 0.8 0.8 1</diffuse>
+                    <specular>0.8 0.8 0.8 1</specular>
+                </material>
+                </visual>
+            </link>
+       </model>
+       
+       <model name = "GreatWall_of_China">
+       <static>true</static>
+       <pose> 5 0 0 0 0 0 </pose>
+       
+       <link name="link">
+                <collision name="collision">
+                <geometry>
+                    <box>
+                    	<size> .5 10 2 </size>
+                    </box>
+                </geometry>
+                </collision>
+                <visual name="visual">
+                <geometry>
+                    <box>
+                    	<size> .5 10 2 </size>
+                    </box>
+                </geometry>
+                <material>
+			<ambient>1.0 0.0 0.0 1.0</ambient>
+			<diffuse>1.0 0.0 0.0 1.0</diffuse>
+			<specular>1.0 0.0 0.0 1.0</specular>
+                </material>
+                </visual>
+            </link>
+       
+       </model>
+       
+       <model name="ramp">
+      <static>true</static>
+
+      <pose>-5 0 0.2 0 0.4 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>3 0.5 .1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>3 0.5 .1</size>
+            </box>
+          </geometry>
+        </visual>
+      </link>
+    </model>
+       
+       <spherical_coordinates>
+	  <!-- currently gazebo has a bug: instead of outputting lat, long, altitude in ENU
+	  (x = East, y = North and z = Up) as the default configurations, it's outputting (-E)(-N)U,
+	  therefore we rotate the default frame 180 so that it would go back to ENU
+	  see: https://github.com/osrf/gazebo/issues/2022 -->
+	  
+	  <surface_model>EARTH_WGS84</surface_model>
+	  <latitude_deg>41.2</latitude_deg>
+	  <longitude_deg>-111.9</longitude_deg>
+	  <world_frame_orientation> ENU </world_frame_orientation>
+	  <elevation>1200.0</elevation>
+	  <heading_deg>0</heading_deg>
+	</spherical_coordinates>
+       
+       
+       <include>
+       <pose> 0 0 0 0 0 0 </pose>
+            <uri> file://models/robot/robot.sdf </uri>
+       </include>
+              <include>
+            <pose> 1 1 1 0 0 0 </pose>
+            <uri> file://models/tag0_cube/model.sdf </uri>
+       </include>
+       <include>
+            <pose> 2 2 1 0 0 0 </pose>
+            <uri> file://models/tag1_cube/model.sdf </uri>
+       </include>
+       <include>
+            <pose> -1 -1 1 0 0 0 </pose>
+            <uri> file://models/tag2_cube/model.sdf </uri>
+       </include>
+       <include>
+            <pose> -2 -2 1 0 0 0 </pose>
+            <uri> file://models/tag3_cube/model.sdf </uri>
+       </include>
+       
+       <plugin filename="gz-sim-sensors-system"
+ 	       name = "gz::sim::systems::Sensors">
+ 	       <render_engine>ogre2</render_engine>           
+       </plugin>
+       
+       <plugin filename="gz-sim-imu-system"
+               name="gz::sim::systems::Imu">
+       </plugin>
+       
+       <plugin filename="gz-sim-navsat-system"
+       	       name="gz::sim::systems::NavSat">
+       </plugin>
+       
+       
+       <!-- Moving Forward-->
+	<plugin filename="gz-sim-triggered-publisher-system"
+        	name="gz::sim::systems::TriggeredPublisher">
+    	<input type="gz.msgs.Int32" topic="/keyboard/keypress">
+        	<match field="data">16777235</match>
+    	</input>
+    <output type="gz.msgs.Twist" topic="/cmd_vel">
+        linear: {x: 2}, angular: {z: 0.0}
+    </output>
+	</plugin>
+	
+	<!-- Moving Backward-->
+	<plugin filename="gz-sim-triggered-publisher-system"
+        	name="gz::sim::systems::TriggeredPublisher">
+    		<input type="gz.msgs.Int32" topic="/keyboard/keypress">
+        		<match field="data">16777237</match>
+    		</input>
+    		<output type="gz.msgs.Twist" topic="/cmd_vel">
+        		linear: {x: -2}, angular: {z: 0.0}
+    		</output>
+	</plugin>
+	
+	<!-- Moving Left-->
+	<plugin filename="gz-sim-triggered-publisher-system"
+        	name="gz::sim::systems::TriggeredPublisher">
+    		<input type="gz.msgs.Int32" topic="/keyboard/keypress">
+        		<match field="data">16777236</match>
+    		</input>
+    		<output type="gz.msgs.Twist" topic="/cmd_vel">
+        		linear: {x: 0}, angular: {z: -10}
+    		</output>
+	</plugin>
+	
+	<!-- Moving Right-->
+	<plugin filename="gz-sim-triggered-publisher-system"
+        	name="gz::sim::systems::TriggeredPublisher">
+    		<input type="gz.msgs.Int32" topic="/keyboard/keypress">
+        		<match field="data">16777234</match>
+    		</input>
+    		<output type="gz.msgs.Twist" topic="/cmd_vel">
+        		linear: {x: 0}, angular: {z: 10}
+    		</output>
+	</plugin>
+    </world>
+</sdf>
